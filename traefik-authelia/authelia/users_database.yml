@@ -1,0 +1,29 @@
+###############################################################
+#                         Users Database                      #
+###############################################################
+
+# This file can be used if you do not have an LDAP set up.
+
+# List of users
+
+users:
+  admin:
+    displayname: "Administrator"
+    password: "$argon2id$v=19$m=1048576,t=1,p=8$RGVEY045UnhDYTIxbi8xNQ$giyGx1jiQlIIGQ07n6InS+2/l2Y2wqkRI9u9hFYCa3U"
+    email: "admin@spacevulture.de"
+    groups:
+      - admins
+      - users
+      - guests
+  mattea:
+    displayname: "Mattea"
+    password: "$argon2id$v=19$m=1048576,t=1,p=8$VHJjdFZITGNEbDdFVXNXMA$CvTWZ4hFw3IDgcKBtNo+biVzlBkTuUvC1UOzWGhBlYw"
+    email: mattea.allgeier@t-online.de
+    groups:
+      - users
+  guest:
+    displayname: "Anonymous platypus"
+    password: "$argon2id$v=19$m=1048576,t=1,p=8$cUs1UjRSTjVKV3NUbGdOeg$yk7X9cdCPEW3a7xB2mC746DEDfCknHdJDnBfYxXE0u4"
+    email: harry.potter@authelia.com
+    groups:
+      - guests

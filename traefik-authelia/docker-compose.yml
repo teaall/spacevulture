@@ -1,0 +1,70 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/static_conf.yml:/traefik.yml:ro
+      - ./traefik/acme.json:/acme.json
+    environment:
+      - TZ=${TZ}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.spacevulture.de`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik.middlewares=authelia@docker"
+
+  authelia:
+    # A container that exposes an API to show its IP address
+    image: authelia/authelia
+    container_name: authelia
+    restart: unless-stopped
+    networks:
+      - proxy
+    ports:
+      - "9091:9091"
+    volumes:
+      - ./authelia:/config
+    secrets:
+      - storage_encryption_key
+      - jwt
+      - session
+      - smtp
+    environment:
+      - AUTHELIA_JWT_SECRET_FILE=/run/secrets/jwt
+      - AUTHELIA_SESSION_SECRET_FILE=/run/secrets/session
+      - AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE=/run/secrets/smtp
+      - AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE=/run/secrets/storage_encryption_key
+      - TZ=${TZ}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authelia.rule=Host(`auth.spacevulture.de`)"
+      - "traefik.http.routers.authelia.entrypoints=websecure"
+      - "traefik.http.routers.authelia.tls.certresolver=letsencrypt"
+      - "traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=https://auth.spacevulture.de"
+      - "traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true"
+      - "traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User, Remote-Groups, Remote-Name, Remote-Email"
+
+secrets:
+  jwt:
+    file: ./secrets/jwt
+  storage_encryption_key:
+    file: ./secrets/storage_encryption_key
+  session:
+    file: ./secrets/session
+  smtp:
+    file: ./secrets/smtp
+networks:
+  proxy:

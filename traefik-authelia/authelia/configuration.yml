@@ -1,0 +1,90 @@
+###############################################################
+#                   Authelia configuration                    #
+###############################################################
+
+server:
+  host: 0.0.0.0
+  port: 9091
+  buffers:
+    read: 4096
+    write: 4096
+
+log:
+  level: debug
+
+# This secret is set with environment variable AUTHELIA_JWT_SECRET_FILE
+# jwt_secret: supersecret
+
+# Only prod
+# default_redirection_url: https://public.spacevulture.de
+
+totp:
+  issuer: authelia.com
+  period: 30
+  # number of one-time passwords either side of the current one that are considered valid
+  skew: 1
+
+# One Level Higher with Traffic
+# tls_key: /config/ssl/key.pem
+# tls_cert: /config/ssl/cert.pem
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+
+access_control:
+  default_policy: deny
+  rules:
+    - domain: public.spacevulture.de
+      policy: bypass
+
+    - domain: traefik.spacevulture.de
+      subject: "group:admins"
+      policy: one_factor
+
+    - domain: "mail.spacevulture.de"
+      subject: "group:admins"
+      policy: deny
+
+regulation:
+  max_retries: 3
+  find_time: 120
+  ban_time: 300
+
+session:
+  name: spacevulture_session
+  # This secret is set with env variables AUTHELIA_SESSION_SECRET_FILE
+  # secret: supersecret
+  expiration: 3600 # 1 hour; Alternative: 1h
+  inactivity: 300 # 5 minutes; Alternative: 5m
+  remember_me_duration: 1M # A month
+  domain: spacevulture.de # Should match whatever your root protected domain is
+  # The redis connection details (optional)
+  # If not provided, sessions will be stored in memory
+  # redis:
+  #   host: 127.0.0.1
+  #   port: 6379
+  # # Use a unix socket instead
+  # host: /var/run/redis/redis.sock
+
+  # Password can also be set using a secret: https://docs.authelia.com/configuration/secrets.html
+  #   password: authelia
+
+# If you don’t have a SQL server, you can use SQLite
+storage:
+  local:
+    path: /config/db.sqlite3
+
+notifier:
+  disable_startup_check: true
+  smtp:
+    username: admin
+    # This secret is set with environment variable AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE
+    #password: supersecret
+    subject: "[Authelia@Spacevulture] {title}"
+    # host: mail.spacevulture.de
+    host: 127.0.0.1
+    port: 1025
+    sender: admin@espacevulture.de
+    # This address is used during the startup check to verify the email configuration is correct. It's not important what it is except if your email server only allows local delivery.
+    startup_check_address: test@authelia.com

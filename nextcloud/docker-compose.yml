@@ -1,0 +1,63 @@
+version: "3.8"
+services:
+  nextcloud-db:
+    image: mariadb
+    container_name: nextcloud-db
+    command: – transaction-isolation=READ-COMMITTED – log-bin=ROW
+    restart: unless-stopped
+    volumes:
+      - ./mariadb:/var/lib/mysql
+    secrets:
+      - mysqlroot
+      - mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=/run/secrets/mysqlroot
+      - MYSQL_PASSWORD=/run/secrets/mysql
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - TZ=${TZ}
+    networks:
+      - service-network
+  nextcloud-redis:
+    image: redis:alpine
+    container_name: nextcloud-redis
+    hostname: nextcloud-redis
+    networks:
+      - service-network
+    restart: unless-stopped
+    secrets:
+      - redis
+    command: redis-server – requirepass /run/secrets/redis
+  nextcloud-app:
+    image: nextcloud
+    container_name: nextcloud-app
+    restart: unless-stopped
+    depends_on:
+      - nextcloud-db
+      - nextcloud-redis
+    secrets:
+      - redis
+    environment:
+      REDIS_HOST: nextcloud-redis
+      REDIS_HOST_PASSWORD: /run/secrets/redis
+    volumes:
+      - ./app:/var/www/html
+      - ./data:/var/www/html/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nextcloud.entrypoints=websecure"
+      - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.spacevulturen.de`)"
+      - "traefik.http.routers.nextcloud.tls.certresolver=letsencrypt"
+    networks:
+      - service-network
+
+secrets:
+  mysqlroot:
+    file: ./secrets/mysqlroot
+  mysql:
+    file: ./secrets/mysql
+  redis:
+    file: ./secrets/redis
+networks:
+  service-network:
+    external: true

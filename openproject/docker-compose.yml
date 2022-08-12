@@ -1,0 +1,27 @@
+version: "3.7"
+
+services:
+  openproject:
+    container_name: openproject
+    image: openproject/community:7
+    ports:
+      - 8080:80
+    volumes:
+      - ./openproject/static:/var/db/openproject
+      - ./openproject/logs:/var/log/supervisor
+      - ./openproject/pgdata:/var/lib/postgresql/9.6/main
+    environment:
+      - SECRET_KEY_BASE: /run/secrets/key
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nextcloud.entrypoints=websecure"
+      - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.spacevulturen.de`)"
+      - "traefik.http.routers.nextcloud.tls.certresolver=letsencrypt"
+
+secrets:
+  key:
+    file: ./secrets/key
+
+networks:
+  service-network:
+    external: true
